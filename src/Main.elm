@@ -118,7 +118,7 @@ view model =
     , body =
         toolbar False
             |> List.append [ br [] [] ]
-            |> List.append [ div [] [ getMainContent model ] ]
+            |> List.append [ div [] [ contentMain model ] ]
             |> List.reverse
     }
 
@@ -153,8 +153,8 @@ viewLink path =
 -}
 
 
-getMainContent : Model -> Html msg
-getMainContent model =
+contentMain : Model -> Html msg
+contentMain model =
     case model.url.path of
         "/" ->
             text "i am root"
@@ -169,10 +169,19 @@ getMainContent model =
             text "boeks"
 
         "/Profile" ->
-            text "rpofa"
+            contentProfile model
 
         "/Contact" ->
             text "Hey you can report a bug here"
 
         _ ->
             text "wtf this is undefined paeg"
+
+
+contentProfile : Model -> Html msg
+contentProfile model =
+    if model.authed == True then
+        text "ur already authed"
+
+    else
+        text "need to implement form"
