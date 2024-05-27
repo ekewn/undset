@@ -131,8 +131,21 @@ view model =
 
 toolbar : IsAuthed -> List (Html msg)
 toolbar isAuthed =
-    [ h1 [ style "background-color" "gray" ] [ text "Sigrid Undset Fangirls" ]
-    , tr [ style "background-color" "gray" ] (List.map viewLink urls)
+    let
+        authTr : Html msg
+        authTr =
+            if isAuthed == True then
+                tr [] [ text "Welcome Authed" ]
+
+            else
+                tr [] [ text "You are browsing in guest mode" ]
+
+        links : List (Html msg)
+        links =
+            List.append (List.map viewLink urls) [ authTr ]
+    in
+    [ h1 [] [ text "Sigrid Undset Fangirls" ]
+    , tr [] links
     ]
 
 
@@ -175,7 +188,7 @@ contentMain model =
             text "Hey you can report a bug here"
 
         _ ->
-            text "wtf this is undefined paeg"
+            text "Landing page"
 
 
 contentProfile : Model -> Html msg
