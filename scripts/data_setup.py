@@ -1,6 +1,7 @@
 import os
 import sqlite3
 from enum import Enum
+from pathlib import Path
 from typing import Any, Callable, Literal, NamedTuple
 
 #
@@ -9,8 +10,12 @@ from typing import Any, Callable, Literal, NamedTuple
 #
 #
 
-# Consts
-DB_NAME = f"backend{os.pathsep}db.db"
+# Globals
+SCRIPT_DIR_PATH = os.path.dirname(__file__)
+ROOT_DIR = Path(SCRIPT_DIR_PATH).parent.absolute()
+DB_NAME = os.path.join(ROOT_DIR,"backend","db.db")
+HS_NAME = os.path.join(ROOT_DIR,"backend","src","DataDefs.hs")
+ELM_NAME = os.path.join(ROOT_DIR,"frontend","src","DataDefs.elm")
 
 # Type Aliases
 type Id = int
@@ -31,6 +36,7 @@ type FieldIsUnique = bool
 type ThreadCreatorId = int
 type HsType = Literal["Integer"] | Literal["Integer"] | Literal["Boolean"]
 type HsTypeDef = str
+type HsDataDef = str
 
 # Types
 Table = NamedTuple("Table" , [("name", Name) , ("fields", TableFields)])
@@ -96,6 +102,7 @@ test_messages: list[Message] = [
 # FUNCTIONS
 #
 #
+
 # SQL Generators
 def table_create_sql(t: TABLES) -> Sql:
     field_sql: map[Sql] = map(field_create_sql, t.value.fields)
@@ -124,29 +131,32 @@ def field_create_sql(f: Field) -> Sql:
 
 
 # Haskell Generators
-hs_int: Any = lambda _: "Integer" if isinstance(_, int) else _
 hs_str: Any = lambda _: "String" if isinstance(_, str) else _
 hs_bool: Any = lambda _: "Boolean" if isinstance(_, bool) else _
-hs_type: Callable[[Any], HsType] = lambda _: hs_int(hs_str(hs_bool(_)))
-hs_print_type: Callable[[Field], HsTypeDef] = lambda _: f"  {_.name} :: {hs_type(_.type)},"
+hs_int: Any = lambda _: "Integer" if isinstance(_, int) else _
+hs_type_determine: Callable[[Any], HsType] = lambda _: hs_int(hs_bool(hs_str(_)))
+hs_field_type_generate: Callable[[Field], HsTypeDef] = lambda _: f"  {_.name} :: {hs_type_determine(_.type)}"
 
-def hs_create_defs(t: TABLES) -> Succeeded:
-    file_name: FilePath = f"{os.getcwd()}{os.pathsep}backend{os.pathsep}src{os.pathsep}data.hs"
+
+def hs_data_create(t: TABLES) -> HsDataDef:
+     return (
+        f"{{- Definition constructed from {t.value.name} type in {__file__} -}}\n"
+        f"data {t.value.name} = {t.value.name}\n"
+        "  { \n"
+        f"    {", ".join(list(map(hs_field_type_generate, t.value.fields)))}\n"
+        "  }\n\n"
+    )
+
+
+def hs_file_create(target_filename: FilePath) -> Succeeded:
     try:
-        with open(file_name, "w") as f:
-            f.write("{- Data Generated from data_setup.py -}")
-            f.write(f"data {t.value.name} = {t.value.name} {{")
-            f.write("  {")
-            list(map(f.write, map(hs_print_type, t.value.fields)))
-            f.write("  }")
-            f.write("")
+        with open(target_filename, "w") as f:
+            f.write("module DataDef where \n")
+            list(map(f.write, map(hs_data_create, TABLES)))
         return True
     except Exception as e:
         print(e)
         return False
-
-
-
 #
 #
 # MAIN
@@ -156,5 +166,13 @@ if __name__ == "__main__":
     cur = sqlite3.connect(DB_NAME).cursor()
     scripts_table_create = list(map(table_create_sql, TABLES))
     list(map(cur.executescript, scripts_table_create))
-    list(map(hs_create_defs, TABLES))
+    cur.close()
+
+    hs_file_create(HS_NAME)
+
+
+
+
+
+
 
