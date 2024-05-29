@@ -31,10 +31,10 @@ Table = NamedTuple("Table" , [("name", Name) , ("fields", TableFields)])
 Field = NamedTuple("Field",
                    [("name", Name)
                    , ("type", FieldType)
-                   , ("isPrimaryKey", FieldIsPrimaryKey)
-                   , ("isForeignKey", FieldIsForeignKey)
-                   , ("isNullable", FieldIsNullable)
-                   , ("isUnique", FieldIsUnique)])
+                   , ("is_primary_key", FieldIsPrimaryKey)
+                   , ("is_foreign_key", FieldIsForeignKey)
+                   , ("is_nullable", FieldIsNullable)
+                   , ("is_unique", FieldIsUnique)])
 User = NamedTuple("User",
                   [("id", Id)
                     , ("name", Name)
@@ -70,7 +70,20 @@ class TABLES(Enum):
                       , Field("user_id", "INTEGER", False, True, False, False)
                       , Field("content", "TEXT", False, False, False, False)])
 
-# TODO: Test Data
+# Test Data
+test_users: list[User] = [
+    User(1, "admin", "ellis.coon@gmail.com", "admin")
+]
+
+test_threads: list[Thread] = [
+    Thread(1, "test", 1)
+]
+
+test_messages: list[Message] = [
+    Message(1, 1, 1, "first message")
+    , Message(2, 1, 1, "second message")
+]
+
 
 #
 #
@@ -79,10 +92,10 @@ class TABLES(Enum):
 #
 def table_create_sql(t: TABLES) -> Sql:
     field_sql: map[Sql] = map(field_create_sql, t.value.fields)
-    any_foreign_keys: bool = any(list(map(lambda f: f.isForeignKey, t.value.fields))) 
+    any_foreign_keys: bool = any(list(map(lambda f: f.is_foreign_key, t.value.fields))) 
     foreign_keys: list[Name] = list(
         map(lambda f: f.name, 
-            filter(lambda f: f.isForeignKey, t.value.fields)))
+            filter(lambda f: f.is_foreign_key, t.value.fields)))
 
     return ( 
         f" CREATE TABLE IF NOT EXISTS {t.name} ( "
@@ -97,9 +110,9 @@ def foreign_key_create_sql(f_name: Name) -> Sql:
 
 
 def field_create_sql(f: Field) -> Sql:
-    is_primary_key: str = "PRIMARY KEY" if f.isPrimaryKey else ""
-    is_unique: str = "UNIQUE" if f.isUnique else ""
-    is_nullable : str = "" if f.isNullable else "NOT NULL"
+    is_primary_key: str = "PRIMARY KEY" if f.is_primary_key else ""
+    is_unique: str = "UNIQUE" if f.is_unique else ""
+    is_nullable : str = "" if f.is_nullable else "NOT NULL"
     return f"{f.name} {f.type} {is_primary_key} {is_nullable} {is_unique} "
 
 
