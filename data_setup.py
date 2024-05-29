@@ -1,6 +1,7 @@
+import os
 import sqlite3
 from enum import Enum
-from typing import Literal, NamedTuple
+from typing import Any, Callable, Literal, NamedTuple
 
 #
 #
@@ -9,7 +10,7 @@ from typing import Literal, NamedTuple
 #
 
 # Consts
-DB_NAME = "db.db"
+DB_NAME = f"backend{os.pathsep}db.db"
 
 # Type Aliases
 type Id = int
@@ -18,6 +19,9 @@ type Email = str
 type Password = str
 type Content = str
 type Sql = str
+type Succeeded = bool
+type Directory = str | os.PathLike
+type FilePath = str | os.PathLike
 type TableFields = list[Field]
 type FieldType = Literal["INTEGER"] | Literal["TEXT"]
 type FieldIsPrimaryKey = bool
@@ -25,6 +29,8 @@ type FieldIsForeignKey = bool
 type FieldIsNullable = bool
 type FieldIsUnique = bool
 type ThreadCreatorId = int
+type HsType = Literal["Integer"] | Literal["Integer"] | Literal["Boolean"]
+type HsTypeDef = str
 
 # Types
 Table = NamedTuple("Table" , [("name", Name) , ("fields", TableFields)])
@@ -90,6 +96,7 @@ test_messages: list[Message] = [
 # FUNCTIONS
 #
 #
+# SQL Generators
 def table_create_sql(t: TABLES) -> Sql:
     field_sql: map[Sql] = map(field_create_sql, t.value.fields)
     any_foreign_keys: bool = any(list(map(lambda f: f.is_foreign_key, t.value.fields))) 
@@ -116,6 +123,30 @@ def field_create_sql(f: Field) -> Sql:
     return f"{f.name} {f.type} {is_primary_key} {is_nullable} {is_unique} "
 
 
+# Haskell Generators
+hs_int: Any = lambda _: "Integer" if isinstance(_, int) else _
+hs_str: Any = lambda _: "String" if isinstance(_, str) else _
+hs_bool: Any = lambda _: "Boolean" if isinstance(_, bool) else _
+hs_type: Callable[[Any], HsType] = lambda _: hs_int(hs_str(hs_bool(_)))
+hs_print_type: Callable[[Field], HsTypeDef] = lambda _: f"  {_.name} :: {hs_type(_.type)},"
+
+def hs_create_defs(t: TABLES) -> Succeeded:
+    file_name: FilePath = f"{os.getcwd()}{os.pathsep}backend{os.pathsep}src{os.pathsep}data.hs"
+    try:
+        with open(file_name, "w") as f:
+            f.write("{- Data Generated from data_setup.py -}")
+            f.write(f"data {t.value.name} = {t.value.name} {{")
+            f.write("  {")
+            list(map(f.write, map(hs_print_type, t.value.fields)))
+            f.write("  }")
+            f.write("")
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+
+
 #
 #
 # MAIN
@@ -125,4 +156,5 @@ if __name__ == "__main__":
     cur = sqlite3.connect(DB_NAME).cursor()
     scripts_table_create = list(map(table_create_sql, TABLES))
     list(map(cur.executescript, scripts_table_create))
+    list(map(hs_create_defs, TABLES))
 
