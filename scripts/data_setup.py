@@ -1,9 +1,11 @@
+from functools import reduce
 import os
 import sqlite3
 from collections import deque
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, Literal, NamedTuple
+from types import FunctionType
+from typing import Any, Callable, Deque, Iterator, List, Literal, NamedTuple
 
 #
 #
@@ -18,8 +20,12 @@ DB_NAME = os.path.join(ROOT_DIR,"backend","db.db")
 HS_NAME = os.path.join(ROOT_DIR,"backend","src","DataDefs.hs")
 ELM_NAME = os.path.join(ROOT_DIR,"frontend","src","DataDefs.elm")
 
-# Type Aliases
+
+# Generic Type Aliases
 type Fn[a, b] = Callable[[a], b]
+
+
+# Domain Type Aliases
 type Id = int
 type Name = str
 type Email = str
@@ -29,7 +35,6 @@ type Sql = str
 type Succeeded = bool
 type Directory = str | os.PathLike
 type FilePath = str | os.PathLike
-type TableFields = list[Field]
 type FieldType = Literal["INTEGER"] | Literal["TEXT"]
 type FieldIsPrimaryKey = bool
 type FieldIsForeignKey = bool
@@ -43,8 +48,8 @@ type ElmType = Literal["String"] | Literal["Int"] | Literal["Bool"]
 type ElmTypeDef = str
 type ElmDataDef = str
 
-# Types
-Table = NamedTuple("Table" , [("name", Name) , ("fields", TableFields)])
+
+# Domain Types
 Field = NamedTuple("Field",
                    [("name", Name)
                    , ("type", FieldType)
@@ -52,6 +57,9 @@ Field = NamedTuple("Field",
                    , ("is_foreign_key", FieldIsForeignKey)
                    , ("is_nullable", FieldIsNullable)
                    , ("is_unique", FieldIsUnique)])
+Table = NamedTuple("Table", 
+                   [("name", Name)
+                    , ("fields", List[Field])])
 User = NamedTuple("User",
                   [("id", Id)
                     , ("name", Name)
@@ -66,6 +74,7 @@ Message = NamedTuple("ThreadMessage",
                       , ("thread_id", Id)
                       , ("user_id", Id)
                       , ("content", Content)])
+
 
 # Database Table Structures
 class TABLES(Enum):
@@ -114,25 +123,48 @@ test_messages: list[Message] = [
 #
 #
 
-# Generalized
-consume: Fn[Iterator, deque] = \
-lambda _: deque(_, maxlen=0)
+# General
+def consume(i: Iterator) -> Deque:
+    """
+    Calls a lazy object to completion. Typically this is done to trigger side-effects.
+    """
+    return deque(i, maxlen=0)
 
-join_to_comma: Fn[Iterator[str], str] = \
-lambda _: ", ".join(list(_))
+
+def compose2(f: Callable, g: Callable) -> Callable: 
+    """
+    First function is assessed first, then result handed to second function.
+    """
+    return lambda *a, **kw: g(f(*a, **kw))
+
+
+def compose(*fs: Callable) -> Callable:
+    """
+    Functions assessed in order they are passed in.
+    """
+    return reduce(compose2, fs)
+
+
+def join_to_comma(i: Iterator[str]) -> str:
+    return ", ".join(list(i))
+
 
 # Type Specific
-table_name: Fn[TABLES, Name] = \
-lambda _: _.value.name
+def name(x: Table | Field) -> Name:
+    return x.value.name if isinstance(x,TABLES) else x.name
+
+def fields(t: Table) -> List[Field]:
+    return t.fields
+
 
 # SQL Generators
 def table_create_sql(t: TABLES) -> Sql:
-    any_foreign_keys: bool = any(list(map(lambda f: f.is_foreign_key, t.value.fields))) 
+    any_foreign_keys: bool = any(map(lambda f: f.is_foreign_key, t.value.fields))
     foreign_keys: list[Name] = list(
-        map(lambda f: f.name, filter(lambda f: f.is_foreign_key, t.value.fields)))
+        map(name, filter(lambda f: f.is_foreign_key, t.value.fields)))
 
     return ( 
-        f" CREATE TABLE IF NOT EXISTS {t.name} ( "
+        f" CREATE TABLE {t.name} ( "
         f" {join_to_comma(map(field_create_sql, t.value.fields))} "
         f" {", " + join_to_comma(map(foreign_key_create_sql, foreign_keys)) if any_foreign_keys else ''}"
         ");")
@@ -153,28 +185,33 @@ def field_create_sql(f: Field) -> Sql:
 
 
 # Haskell Generators
-hs_str: Fn[Any, HsType | Any] = \
-lambda _: "String" if isinstance(_, str) else _
 
-hs_bool: Fn[Any, HsType | Any] = \
-lambda _: "Boolean" if isinstance(_, bool) else _
+def hs_type_return(x: Any) -> HsType:
+    """
+    Determines the type of a variable in Haskell parlance.
+    """
+    hs_str: Fn[Any, HsType | Any] = \
+        lambda x: "String" if isinstance(x, str) else x
+    hs_bool: Fn[Any, HsType | Any] = \
+        lambda x: "Boolean" if isinstance(x, bool) else x
+    hs_int: Fn[Any, HsType | Any] = \
+        lambda x: "Integer" if isinstance(x, int) else x
+    hs_type_determine: Fn[Any, HsType | Any] = \
+        lambda x: hs_int(hs_bool(hs_str(x)))
 
-hs_int: Fn[Any, HsType | Any] = \
-lambda _: "Integer" if isinstance(_, int) else _
+    return hs_type_determine(x) if hs_type_determine(x) != x else "String"
 
-hs_type_determine: Fn[Any, HsType | Any] = \
-lambda _: hs_int(hs_bool(hs_str(_)))
 
-hs_type_return: Fn[Any, HsType] = \
-lambda _: hs_type_determine(_) if hs_type_determine(_) != _ else "String"
-
-hs_field_type_generate: Fn[Field, HsTypeDef] = \
-lambda _: f"  {_.name} :: {hs_type_return(_.type)}"
+def hs_field_type_generate(f: Field) -> HsTypeDef:
+    """
+    Determines the Haskell string representation of the type definition.
+    """
+    return f"  {f.name} :: {hs_type_return(f.type)}"
 
 
 def hs_data_create(t: TABLES) -> HsDataDef:
-    t_name = table_name(t)
-     return (
+    t_name = name(t)
+    return (
         f"{{- Definition constructed from {t_name} type in {__file__} -}}\n"
         f"data {t_name} = {t_name}\n"
         "  { \n"
@@ -197,26 +234,26 @@ def hs_file_create(target_filename: FilePath) -> Succeeded:
 
 # Elm Generators
 elm_str: Fn[Any, ElmType | Any] = \
-lambda _: "String" if isinstance(_, str) else _
+lambda x: "String" if isinstance(x, str) else x
 
 elm_bool: Fn[Any, ElmType | Any] = \
-lambda _: "Bool" if isinstance(_, bool) else _
+lambda x: "Bool" if isinstance(x, bool) else x
 
 elm_int: Fn[Any, ElmType | Any] = \
-lambda _: "Int" if isinstance(_, int) else _
+lambda x: "Int" if isinstance(x, int) else x
 
 elm_type_determine: Fn[Any, ElmType | Any] = \
-lambda _: elm_int(elm_bool(elm_str(_)))
+lambda x: elm_int(elm_bool(elm_str(x)))
 
 elm_type_return: Fn[Any, ElmType] = \
-lambda _: elm_type_determine(_) if elm_type_determine(_) != _ else "String"
+lambda x: elm_type_determine(x) if elm_type_determine(x) != x else "String"
 
 elm_field_type_generate: Fn[Field, ElmTypeDef] = \
-lambda _: f" {_.name} : {elm_type_return(_.type)}"
+lambda x: f" {x.name} : {elm_type_return(x.type)}"
 
 
 def elm_data_create(t: TABLES) -> ElmDataDef:
-    t_name = table_name(t)
+    t_name = name(t)
     return (
         f"{{- Definition constructed from {t_name} type in {__file__} -}}\n"
         f"{t_name} : {{ {join_to_comma(map(elm_field_type_generate, t.value.fields))} }}"
