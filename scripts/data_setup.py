@@ -14,8 +14,8 @@ from typing import Any, Callable, Deque, Iterator, List, Literal, NamedTuple
 SCRIPT_DIR_PATH = os.path.dirname(__file__)
 ROOT_DIR = Path(SCRIPT_DIR_PATH).parent.absolute()
 DB_NAME = os.path.join(ROOT_DIR,"backend","db.db")
-HS_NAME = os.path.join(ROOT_DIR,"backend","src","DataDefs.hs")
-ELM_NAME = os.path.join(ROOT_DIR,"frontend","src","DataDefs.elm")
+HS_NAME = os.path.join(ROOT_DIR,"backend","src","DataDefs","Tables.hs")
+ELM_NAME = os.path.join(ROOT_DIR,"frontend","src","Tables.elm")
 
 
 # Generic Type Aliases
@@ -250,4 +250,6 @@ if __name__ == "__main__":
     hs_file_create(HS_NAME, TABLES)
 
     elm_file_create(ELM_NAME, TABLES)
+
+
 
