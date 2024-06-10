@@ -1,9 +1,8 @@
-from functools import reduce
 import os
 import sqlite3
 from collections import deque
 from pathlib import Path
-from typing import Any, Callable, Deque, Iterator, List, Literal, NamedTuple, Optional
+from typing import Any, Callable, Deque, Iterator, List, Literal, NamedTuple
 
 #
 #
@@ -122,20 +121,6 @@ def consume(i: Iterator) -> Deque:
     return deque(i, maxlen=0)
 
 
-def compose2(f: Callable, g: Callable) -> Callable: 
-    """
-    First function is assessed first, then result handed to second function.
-    """
-    return lambda *a, **kw: g(f(*a, **kw))
-
-
-def compose(*fs: Callable) -> Callable:
-    """
-    Functions assessed in order they are passed in.
-    """
-    return reduce(compose2, fs)
-
-
 def join_to_comma(i: Iterator[str]) -> str:
     """
     """
@@ -186,6 +171,7 @@ type ElmTypes = Literal["String"] | Literal["Int"] | Literal["Bool"]
 type ElmTypeDef = str
 type ElmDataDef = str
 
+
 def types(str_repr: Types, bool_repr: Types, int_repr: Types, x: Any) -> Types:
     """
     Allows for the creation of string representations for Python data types in other languages.
@@ -203,7 +189,6 @@ def types(str_repr: Types, bool_repr: Types, int_repr: Types, x: Any) -> Types:
 
 
 # Haskell Generators
-
 def hsTypes(x: Any) -> HsTypes:
     return type_determiner("String", "Boolean", "Integer", x) # type: ignore
 
@@ -213,11 +198,9 @@ def hsTypeDef(f: Field) -> HsTypeDef:
 
 
 def hsDataDef(t: Table) -> HsDataDef:
-    t_name = t.name
-
     return (
-        f"{{- Definition constructed from {t_name} type in {__file__} -}}\n"
-        f"data {t_name} = {t_name}\n"
+        f"{{- Definition constructed from {t.name} type in {__file__} -}}\n"
+        f"data {t.name} = {t.name}\n"
         "  { \n"
         f"    {join_to_comma(map(hsTypeDef, t.fields))}\n"
         "  }\n\n"
@@ -231,30 +214,18 @@ def hs_file_create(target_filename: FilePath, ts: List[Table]) -> IO:
 
 
 # Elm Generators
-elm_str: Fn[Any, ElmTypes | Any] = \
-lambda x: "String" if isinstance(x, str) else x
-
-elm_bool: Fn[Any, ElmTypes | Any] = \
-lambda x: "Bool" if isinstance(x, bool) else x
-
-elm_int: Fn[Any, ElmTypes | Any] = \
-lambda x: "Int" if isinstance(x, int) else x
-
-elm_type_determine: Fn[Any, ElmTypes | Any] = \
-lambda x: elm_int(elm_bool(elm_str(x)))
-
-elm_type_return: Fn[Any, ElmTypes] = \
-lambda x: elm_type_determine(x) if elm_type_determine(x) != x else "String"
-
-elm_field_type_generate: Fn[Field, ElmTypeDef] = \
-lambda x: f" {x.name} : {elm_type_return(x.type)}"
+def elmTypes(x: Any) -> ElmTypes:
+    return type_determiner("String", "Bool", "Int", x) # type: ignore
 
 
-def elm_data_create(t: Table) -> ElmDataDef:
-    t_name = t.name
+def elmTypeDef(f: Field) -> ElmTypeDef:
+    return f" {f.name} : {elmTypes(f.type)}"
+
+
+def elmDataDef(t: Table) -> ElmDataDef:
     return (
-        f"{{- Definition constructed from {t_name} type in {__file__} -}}\n"
-        f"{t_name} : {{ {join_to_comma(map(elm_field_type_generate, t.fields))} }}"
+        f"{{- Definition constructed from {t.name} type in {__file__} -}}\n"
+        f"{t.name} : {{ {join_to_comma(map(elmTypeDef, t.fields))} }}"
         "\n\n"
     )
 
@@ -262,7 +233,7 @@ def elm_data_create(t: Table) -> ElmDataDef:
 def elm_file_create(target_filename: FilePath, ts: List[Table]) -> IO:
     with open(target_filename, "w") as f:
         f.write("module DataDef where \n")
-        list(map(f.write, map(elm_data_create, ts)))
+        list(map(f.write, map(elmDataDef, ts)))
 
 
 #
@@ -279,3 +250,4 @@ if __name__ == "__main__":
     hs_file_create(HS_NAME, TABLES)
 
     elm_file_create(ELM_NAME, TABLES)
+
