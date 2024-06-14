@@ -2,7 +2,7 @@ import os
 import sqlite3
 from collections import deque
 from pathlib import Path
-from typing import Any, Deque, Iterator, List, Literal, NamedTuple
+from typing import Any, Callable, Deque, Iterator, List, Literal, NamedTuple
 
 #
 #
@@ -20,6 +20,7 @@ ELM_NAME = os.path.join(ROOT_DIR,"frontend","src","Tables.elm")
 
 # Generic Type Aliases
 type IO = None
+type Fn[a, b] = Callable[[a], b]
 
 
 # Domain Types
@@ -121,6 +122,8 @@ def consume(i: Iterator) -> Deque:
 
 
 def join_to_comma(i: Iterator[str]) -> str:
+    """
+    """
     return ", ".join(list(i))
 
 
@@ -207,7 +210,7 @@ def hsDataDef(t: Table) -> HsDataDef:
 def hs_file_create(target_filename: FilePath, ts: List[Table]) -> IO:
     with open(target_filename, "w") as f:
         f.write(f"module DataDef( )where \n")
-        consume(map(f.write, map(hsDataDef, ts)))
+        list(map(f.write, map(hsDataDef, ts)))
 
 
 # Elm Generators
@@ -230,7 +233,7 @@ def elmDataDef(t: Table) -> ElmDataDef:
 def elm_file_create(target_filename: FilePath, ts: List[Table]) -> IO:
     with open(target_filename, "w") as f:
         f.write("module DataDef where \n")
-        consume(map(f.write, map(elmDataDef, ts)))
+        list(map(f.write, map(elmDataDef, ts)))
 
 
 #
@@ -241,9 +244,12 @@ def elm_file_create(target_filename: FilePath, ts: List[Table]) -> IO:
 if __name__ == "__main__":
     cur = sqlite3.connect(DB_NAME).cursor()
     scripts_table_create = list(map(sqlTable, TABLES))
-    consume(map(cur.executescript, scripts_table_create))
+    list(map(cur.executescript, scripts_table_create))
     cur.close()
 
     hs_file_create(HS_NAME, TABLES)
 
     elm_file_create(ELM_NAME, TABLES)
+
+
+
