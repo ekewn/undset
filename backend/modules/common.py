@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Iterator, Deque
+from typing import Callable, Iterator, Deque
 
 #
 #
@@ -9,6 +9,7 @@ from typing import Iterator, Deque
 
 
 type IO = None
+type Fn[a, b] = Callable[[a], b]
 
 #
 #
