@@ -1,7 +1,7 @@
 from socketserver import TCPServer
 from http.server import BaseHTTPRequestHandler
 
-from backend.modules.common import IO
+from common import IO
 
 #
 #

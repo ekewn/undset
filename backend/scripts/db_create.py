@@ -1,10 +1,10 @@
 import os
 from pathlib import Path
-import sqlite3
+import sqlite3 as sql
 from typing import Any, List, Literal
 
-from backend.modules.common import IO, consume, join_to_comma
-from backend.modules.data import FilePath, Message, Name, Thread, User, Table, Field
+from modules.common import IO, consume, join_to_comma
+from modules.db import FilePath, Message, Name, Thread, User, Table, Field, TABLES
 
 #
 #
@@ -28,35 +28,6 @@ test_messages: List[Message] = [
     Message(2, 1, 1, "second message"),
 ]
 
-# Database Tables
-TABLES: List[Table] = [
-    Table(
-        "User",
-        [
-            Field("id",       "INTEGER", True,  False, False, False),
-            Field("name",     "TEXT",    False, False, False, True),
-            Field("email",    "TEXT",    False, False, False, True),
-            Field("password", "TEXT",    False, False, False, False),
-        ],
-    ),
-    Table(
-        "Thread",
-        [
-            Field("id",         "INTEGER", True,  False, False, False),
-            Field("name",       "TEXT",    False, False, False, True),
-            Field("creator_id", "INTEGER", False, True,  False, False),
-        ],
-    ),
-    Table(
-        "ThreadMessage",
-        [
-            Field("id",        "INTEGER", True,  False, False, False),
-            Field("thread_id", "INTEGER", False, True,  False, False),
-            Field("user_id",   "INTEGER", False, True,  False, False),
-            Field("content",   "TEXT",    False, False, False, False),
-        ],
-    ),
-]
 
 
 #
@@ -180,7 +151,7 @@ def elm_file_create(target_filename: FilePath, ts: List[Table]) -> IO:
 #
 #
 if __name__ == "__main__":
-    cur: sqlite3.Cursor = sqlite3.connect(DB_NAME).cursor()
+    cur: sql.Cursor = sql.connect(DB_NAME).cursor()
     scripts_table_create: list[SqlTable] = list(map(sqlTable, TABLES))
     consume(map(cur.executescript, scripts_table_create))
     cur.close()

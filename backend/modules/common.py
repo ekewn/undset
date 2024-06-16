@@ -8,7 +8,7 @@ from typing import Callable, Iterator, Deque
 #
 
 
-type IO = None
+type IO       = None
 type Fn[a, b] = Callable[[a], b]
 
 #
