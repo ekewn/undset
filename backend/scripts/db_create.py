@@ -14,7 +14,7 @@ from modules.db import FilePath, Message, Name, Thread, User, Table, Field, TABL
 
 # Globals
 THIS_DIR  = os.path.dirname(__file__)
-PROJ_ROOT = Path(THIS_DIR).parent.parent.absolute() # Assumes this is in a modules dir /proj-root/backend/modules/thisfile.py
+PROJ_ROOT = Path(THIS_DIR).parent.parent.absolute() # Assumes this is in a scripts dir /proj-root/backend/scripts/thisfile.py
 DB_NAME   = os.path.join(PROJ_ROOT,"backend","db.db")
 ELM_NAME  = os.path.join(PROJ_ROOT,"frontend","src","Tables.elm")
 
@@ -73,12 +73,6 @@ def sqlTable(t: Table) -> SqlTable:
 # Generic Generator 
 type TypeDef = HsTypeDef | ElmTypeDef
 type Types = HsTypes | ElmTypes
-type HsTypes = Literal["String"] | Literal["Integer"] | Literal["Boolean"]
-type HsTypeDef = str
-type HsDataDef = str
-type ElmTypes = Literal["String"] | Literal["Int"] | Literal["Bool"]
-type ElmTypeDef = str
-type ElmDataDef = str
 
 
 def types(str_repr: Types, bool_repr: Types, int_repr: Types, x: Any) -> Types:
@@ -98,31 +92,34 @@ def types(str_repr: Types, bool_repr: Types, int_repr: Types, x: Any) -> Types:
 
 
 # Haskell Generators
-def hsTypes(x: Any) -> HsTypes:
-    return type_determiner("String", "Boolean", "Integer", x) # type: ignore
-
-
-def hsTypeDef(f: Field) -> HsTypeDef:
-    return f"  {f.name} :: {hsTypes(f.type)}"
-
-
-def hsDataDef(t: Table) -> HsDataDef:
-    return (
-        f"{{- Definition constructed from {t.name} type in {__file__} -}}\n"
-        f"data {t.name} = {t.name}\n"
-        "  { \n"
-        f"    {join_to_comma(map(hsTypeDef, t.fields))}\n"
-        "  }\n\n"
-    )
-
-
-def hs_file_create(target_filename: FilePath, ts: List[Table]) -> IO:
-    with open(target_filename, "w") as f:
-        f.write(f"module DataDef( )where \n")
-        consume(map(f.write, map(hsDataDef, ts)))
+type HsTypes = Literal["String"] | Literal["Integer"] | Literal["Boolean"]
+type HsTypeDef = str
+# INFO:
+# type HsDataDef = str
+# def hsTypes(x: Any) -> HsTypes:
+#     return type_determiner("String", "Boolean", "Integer", x) # type: ignore
+# def hsTypeDef(f: Field) -> HsTypeDef:
+#     return f"  {f.name} :: {hsTypes(f.type)}"
+# def hsDataDef(t: Table) -> HsDataDef:
+#     return (
+#         f"{{- Definition constructed from {t.name} type in {__file__} -}}\n"
+#         f"data {t.name} = {t.name}\n"
+#         "  { \n"
+#         f"    {join_to_comma(map(hsTypeDef, t.fields))}\n"
+#         "  }\n\n"
+#     )
+# def hs_file_create(target_filename: FilePath, ts: List[Table]) -> IO:
+#     with open(target_filename, "w") as f:
+#         f.write(f"module DataDef( )where \n")
+#         consume(map(f.write, map(hsDataDef, ts)))
 
 
 # Elm Generators
+type ElmTypes = Literal["String"] | Literal["Int"] | Literal["Bool"]
+type ElmTypeDef = str
+type ElmDataDef = str
+
+
 def elmTypes(x: Any) -> ElmTypes:
     return type_determiner("String", "Bool", "Int", x) # type: ignore
 
@@ -150,10 +147,20 @@ def elm_file_create(target_filename: FilePath, ts: List[Table]) -> IO:
 # MAIN
 #
 #
-if __name__ == "__main__":
+def main() -> IO:
+    """
+    Reinits database & updates the elm data definitions file for use on the frontend.
+    """
+    tables = list(map(lambda x: x.value, TABLES))
+
+    os.remove(DB_NAME)
+
     cur: sql.Cursor = sql.connect(DB_NAME).cursor()
-    scripts_table_create: list[SqlTable] = list(map(sqlTable, TABLES))
+    scripts_table_create: list[SqlTable] = list(map(sqlTable, tables))
     consume(map(cur.executescript, scripts_table_create))
     cur.close()
 
-    elm_file_create(ELM_NAME, TABLES)
+    elm_file_create(ELM_NAME, tables)
+
+if __name__ == "__main__":
+    main()
