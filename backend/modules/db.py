@@ -1,9 +1,10 @@
 from enum import Enum
+from functools import partial
 import os
-from typing import List, Literal, NamedTuple
+from typing import Iterable, List, Literal, NamedTuple
 import sqlite3 as sql
 
-from backend.scripts.db_create import TABLES
+from backend.modules.common import Fn
 
 #
 #
@@ -95,5 +96,17 @@ class TABLES(Enum):
 # FUNCTIONS
 #
 #
-def select_all(cur: sql.Cursor, t: TABLES):
-    cur
+def _select_all(cur: sql.Cursor, t: TABLES) -> Iterable[User | Thread | Message]:
+    results = cur.execute(f"SELECT * FROM {t.name};").fetchall()
+    match t:
+        case TABLES.USER:
+            return map(lambda x: User(x.id, x.name, x.email, x.password), results)
+        case TABLES.THREAD:
+            return map(lambda x: Thread(x.id, x.name, x.creator_id), results)
+        case TABLES.USER:
+            return map(lambda x: Message(x.id, x.thread_id, x.user_id, x.content), results)
+        case _:
+            raise NotImplemented("wot tbl is dis m8?")
+select_all_users: Fn[sql.Cursor, Iterable[User]] = partial(_select_all, t=TABLES.USER) #type: ignore
+select_all_threads: Fn[sql.Cursor, Iterable[sql.Thread]] = partial(_select_all, t=TABLES.THREAD) #type: ignore
+select_all_messages: Fn[sql.Cursor, Iterable[Message]] = partial(_select_all, t=TABLES.THREADMESSAGE) #type: ignore
