@@ -1,10 +1,11 @@
 import os
-from pathlib import Path
 import sqlite3 as sql
-from typing import Any, List, Literal
+from pathlib import Path
+from typing import Any, Iterator, List, Literal
 
-from modules.common import IO, consume, join_to_comma
-from modules.db import FilePath, Message, Name, Thread, User, Table, Field, TABLES
+from modules.common import IO, consume
+from modules.db import (TABLES, Field, FilePath, Message, Name, Table, Thread,
+                        User)
 
 #
 #
@@ -35,6 +36,11 @@ test_messages: List[Message] = [
 # FUNCTIONS
 #
 #
+
+# Helper
+def join_to_comma(i: Iterator[str]) -> str:
+    return ", ".join(list(i))
+
 
 # SQL Generators
 type Sql = str
@@ -164,3 +170,4 @@ def main() -> IO:
 
 if __name__ == "__main__":
     main()
+
