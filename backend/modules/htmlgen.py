@@ -35,12 +35,11 @@ type HtmlTag       = (Literal["h1"] | Literal["h2"] | Literal["p"] |
 #
 
 
-join: Fn[Iterable[str], str] = methodcaller("join")("")
+join: Fn[Iterable[str], str] = lambda _: methodcaller("join", _)("")
 
 
 def html(hs: Iterable[HtmlComponent]) -> Html:
     return (
-        "Content-Type: text/html"
         "<!DOCTYPE html>"
         '<html lang="en">'
         "<body>"

@@ -1,45 +1,49 @@
 from http.server import BaseHTTPRequestHandler
 from socketserver import TCPServer
+from typing import Dict
 
 from common import IO
-from myhtml import *
+from htmlgen import *
 
 #
 #
-# TYPES
+# DATA
 #
 #
 
 
 type PortNumber = int
+type Route = str
+type RouteFunctions = Dict[Route, Html]
+
+ROUTEFUNCTIONS: RouteFunctions = {"/": html((h1("Testing"), h2("testing2"))),
+                                  "404": html(h1("Where were you trying to go?"))}
 
 #
 #
 # FUNCTIONS
 #
 #
-
+dict.get
 
 class MyHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        print(f"got a hit at {self.path}")
-        match self.path.split("/"):
-            case ['', '']:
-                self.send_response(200, html((h1("Testing"), h2("testing2"))))
-            case _:
-                self.send_response(400, "where are you trying to go?")
+    def do_GET(self, rf: RouteFunctions = ROUTEFUNCTIONS) -> IO:
+        self.send_response(200, "Hit root")
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(bytes(rf.get(self.path, "Where are u going m8?"), "utf-8"))
+
 
 def server_run(n: PortNumber) -> IO:
-    """
-    Starts up the server.
-    """
     TCPServer(("", n), MyHandler).serve_forever()
+
+
+#
+#
+# MAIN
+#
+#
 
 
 if __name__ == "__main__":
     server_run(8080)
-
-
-
-
-
