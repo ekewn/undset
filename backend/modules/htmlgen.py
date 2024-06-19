@@ -1,4 +1,5 @@
 from functools import partial
+from operator import methodcaller
 from typing import Iterable, Literal, Tuple
 
 from common import Fn, compose
@@ -34,8 +35,7 @@ type HtmlTag       = (Literal["h1"] | Literal["h2"] | Literal["p"] |
 #
 
 
-def join(i: Iterable[str]) -> str:
-    return "".join(i)
+join: Fn[Iterable[str], str] = methodcaller("join")("")
 
 
 def html(hs: Iterable[HtmlComponent]) -> Html:
@@ -52,28 +52,26 @@ def html(hs: Iterable[HtmlComponent]) -> Html:
 
 def _htmlComponent(t: HtmlTag, s: str | HtmlComponent) -> HtmlComponent:
     return f"<{t}>{s}</{t}>"
-h1:  Fn[str, H1]  = partial(_htmlComponent, "h1")
-h2:  Fn[str, H2]  = partial(_htmlComponent, "h2")
-p :  Fn[str, P]   = partial(_htmlComponent, "p")
+h1 :  Fn[str, H1] = partial(_htmlComponent, "h1")
+h2 :  Fn[str, H2] = partial(_htmlComponent, "h2")
+p  :  Fn[str, P]  = partial(_htmlComponent, "p")
 _th:  Fn[str, Th] = partial(_htmlComponent, "th")
 _td:  Fn[str, Td] = partial(_htmlComponent, "td")
 _tr:  Fn[str, Tr] = partial(_htmlComponent, "tr")
 
+
 _wrap_rows = lambda x: compose(partial(map,x), join, _tr)
-_wrap_th = _wrap_rows(_th)
-_wrap_td = _wrap_rows(_td)
+_wrap_th   = _wrap_rows(_th)
+_wrap_td   = _wrap_rows(_td)
 
 
-def th(headers: Iterable[str]) -> Tr:
-    return _wrap_th(headers)
+def th(headers: Iterable[str]) -> Tr: return _wrap_th(headers)
 
 
-def td(rows: Iterable[str]) -> Tr:
-    return _wrap_td(rows)
+def td(rows: Iterable[str]) -> Tr: return _wrap_td(rows)
 
 
-def a(content: str, link: Link) -> A:
-    return f"<a href={link}>{content}</a>"
+def a(content: str, link: Link) -> A: return f"<a href={link}>{content}</a>"
 
 
 def table(headers: Iterable[Td], rows: Iterable[Tuple]) -> Table:
@@ -90,6 +88,3 @@ if __name__ == "__main__":
     print_html(table(["h1", "h2", "h3"]
                       , [("td11", "td12", "td13"),
                          ("td21", "td22", "td23")]))
-
-
-
