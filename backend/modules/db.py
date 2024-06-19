@@ -12,13 +12,6 @@ from backend.modules.common import Fn
 #
 #
 
-
-#
-#
-# DATA
-#
-#
-
 type Id                = int
 type Name              = str
 type Email             = str
