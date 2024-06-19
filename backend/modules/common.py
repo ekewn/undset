@@ -49,6 +49,10 @@ def id[a](x: a) -> a:
     return x
 
 
+def tap[a](f: Callable, x: a) -> a:
+    f(x)
+    return x
+
 #
 #
 # TESTS
