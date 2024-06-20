@@ -2,7 +2,7 @@ from collections import deque
 from functools import partial, reduce
 from itertools import accumulate, count, islice, repeat
 from operator import add
-from typing import Any, Callable, Deque, Iterator, List
+from typing import Any, Callable, Iterator, List
 
 #
 #
@@ -13,6 +13,7 @@ from typing import Any, Callable, Deque, Iterator, List
 
 type IO       = None
 type Fn[a, b] = Callable[[a], b]
+type IOFn[a, b] = Callable[[a], b]
 
 #
 #
