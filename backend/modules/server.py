@@ -1,7 +1,7 @@
 from http.server import BaseHTTPRequestHandler
 from operator import attrgetter
 from socketserver import TCPServer
-from typing import Callable, Dict
+from typing import BinaryIO, Callable, Dict
 
 from common import IO, IOFn, tap
 from htmlgen import *
@@ -13,6 +13,7 @@ from htmlgen import *
 #
 
 
+type Path = str
 type ResponseCode = int
 type PortNumber = int
 type Route = str
@@ -28,25 +29,23 @@ ROUTEFUNCTIONS: RouteFunctions = {"/": html((h1("Testing"), h2("testing2"))),
 #
 
 
-# Generic
-call_rf: Callable[[Route, RouteFunctions], Html] = lambda x, y: methodcaller("get", x, "404")(y)
-
 # Header-Related
-def _send_response(rc: ResponseCode, self: BaseHTTPRequestHandler) -> IO:
-    return methodcaller("send_response", rc)(self)
-_send_200: IOFn[BaseHTTPRequestHandler, BaseHTTPRequestHandler] = partial(tap, partial(_send_response, 200))
-_send_400: IOFn[BaseHTTPRequestHandler, BaseHTTPRequestHandler] = partial(tap, partial(_send_response, 400))
-_send_headers  = partial(tap, methodcaller("send_header", "Content-Type", "text/html; charset = utf-8"))
-_end_headers   = partial(tap, methodcaller("end_headers"))
+def _send_response(rc: ResponseCode, self: BaseHTTPRequestHandler) -> IO: return methodcaller("send_response", rc)(self)
+_send_200    : IOFn[BaseHTTPRequestHandler, BaseHTTPRequestHandler] = partial(tap, partial(_send_response, 200))
+_send_400    : IOFn[BaseHTTPRequestHandler, BaseHTTPRequestHandler] = partial(tap, partial(_send_response, 400))
+
+_send_headers: IOFn[BaseHTTPRequestHandler, BaseHTTPRequestHandler] = partial(tap, methodcaller("send_header", "Content-Type", "text/html; charset = utf-8"))
+_end_headers : IOFn[BaseHTTPRequestHandler, BaseHTTPRequestHandler] = partial(tap, methodcaller("end_headers"))
 
 # Write-Related
-_wfile = attrgetter("wfile")
-_write = methodcaller("write")
-_path = attrgetter("path")
-_bytes_utf8 = partial(bytes, encoding="utf-8")
+_wfile       : Fn[BaseHTTPRequestHandler, BinaryIO]     = attrgetter("wfile")
+_write       : Fn[BinaryIO, Callable[[bytes], IO]]      = methodcaller("write")
+_path        : Fn[BaseHTTPRequestHandler, Path]         = attrgetter("path")
+_bytes_utf8  : Fn[str, bytes]                           = partial(bytes, encoding = "utf-8")
+_call_rf      : Callable[[Route, RouteFunctions], Html] = lambda x, y: methodcaller("get", x, "404")(y)
 
 #TODO: 
-init_response  = compose(_send_200, _send_headers, _end_headers, _wfile )
+init_response  = compose(_send_200, _send_headers, _end_headers)
 
 
 # Handler
