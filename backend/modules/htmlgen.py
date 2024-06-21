@@ -2,7 +2,7 @@ from functools import partial
 from operator import methodcaller
 from typing import Iterable, Literal, Tuple
 
-from common import Fn, compose
+from common import Fn, compose, mapc
 
 #
 #
@@ -35,7 +35,8 @@ type HtmlTag       = (Literal["h1"] | Literal["h2"] | Literal["p"] |
 #
 
 
-join: Fn[Iterable[str], str] = lambda _: methodcaller("join", _)("")
+def _join(to: str, i: Iterable[str]) -> str: return methodcaller("join", i)(to)
+join = partial(_join, "")
 
 
 def html(hs: Iterable[HtmlComponent]) -> Html:
@@ -49,8 +50,7 @@ def html(hs: Iterable[HtmlComponent]) -> Html:
     )
 
 
-def _htmlComponent(t: HtmlTag, s: str | HtmlComponent) -> HtmlComponent:
-    return f"<{t}>{s}</{t}>"
+def _htmlComponent(t: HtmlTag, s: str | HtmlComponent) -> HtmlComponent: return f"<{t}>{s}</{t}>"
 h1 :  Fn[str, H1] = partial(_htmlComponent, "h1")
 h2 :  Fn[str, H2] = partial(_htmlComponent, "h2")
 p  :  Fn[str, P]  = partial(_htmlComponent, "p")
@@ -59,7 +59,7 @@ _td:  Fn[str, Td] = partial(_htmlComponent, "td")
 _tr:  Fn[str, Tr] = partial(_htmlComponent, "tr")
 
 
-_wrap_rows = lambda x: compose(partial(map,x), join, _tr)
+def _wrap_rows(x: Fn[str, HtmlComponent]) -> Fn[Iterable[str], HtmlComponent]: return compose(mapc(x), join, _tr)
 _wrap_th   = _wrap_rows(_th)
 _wrap_td   = _wrap_rows(_td)
 
@@ -87,3 +87,4 @@ if __name__ == "__main__":
     print_html(table(["h1", "h2", "h3"]
                       , [("td11", "td12", "td13"),
                          ("td21", "td22", "td23")]))
+

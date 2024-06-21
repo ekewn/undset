@@ -2,7 +2,7 @@ from collections import deque
 from functools import partial, reduce
 from itertools import accumulate, count, islice, repeat
 from operator import add, contains, itemgetter
-from typing import Callable, Dict, Iterator, List
+from typing import Callable, Dict, Iterable, Iterator, List
 
 #
 #
@@ -22,14 +22,35 @@ type IOFn[a, b] = Callable[[a], b]
 #
 
 
-def consume(i: Iterator) -> None: deque(i, maxlen=0)
+def mapc[a, b](f: Callable[[a], b]) -> Callable[[Iterable[a]], Iterable[b]]:
+    """
+    Curried map.
+    """
+    return partial(map, f)
+
+
+def filterc[a](p: Callable[[a], bool]) -> Callable[[Iterable[a]], Iterable[a]]:
+    """
+    Curried filter.
+    """
+    return partial(filter, p)
+
+
+def consume(i: Iterator) -> None:
+    """
+    Consumes an iterable to trigger side effects (avoids wasting the creation of a list).
+    """
+    deque(i, maxlen=0)
 
 
 def compose(*funcs: Callable) -> Callable:
-    def _compose2[a, b, c](x: Callable[[a], b], y: Callable[[b], c]) -> Callable[[a], c]:
+    """
+    Composes functions from left to right
+    """
+    def compose2[a, b, c](x: Callable[[a], b], y: Callable[[b], c]) -> Callable[[a], c]:
         return lambda val: y(x(val))
 
-    return reduce(_compose2, funcs)
+    return reduce(compose2, funcs)
 
 
 def take[a](n: int, i: Iterator[a]) -> List[a]: return list(islice(i, n))
@@ -77,4 +98,7 @@ if __name__ == "__main__":
     assert tap(id, "2") == "2"
     assert get({"a" : 1, "b" : 2}, "a", "defaultvalue") == 1
     assert get({"a" : 1, "b" : 2}, "c", "defaultvalue") == "defaultvalue"
+
+
+
 
