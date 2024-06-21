@@ -1,7 +1,7 @@
 from collections import deque
 from functools import partial, reduce
 from itertools import accumulate, count, islice, repeat
-from operator import add
+from operator import add, itemgetter, contains
 from typing import Any, Callable, Iterator, List
 
 #
@@ -42,7 +42,7 @@ def iterate[a, b](f: Callable[[a], b], x: a) -> Iterator[b]:
     return accumulate(repeat(x), lambda fx, _ : f(fx)) #type: ignore
 
 
-def cond[a, b](predicate: Callable[[Any], bool], t: a, f: b) -> a | b:
+def cond[a, b](predicate: bool, t: a, f: b) -> a | b:
     return t if predicate else f
 
 
@@ -53,6 +53,12 @@ def id[a](x: a) -> a:
 def tap[a](f: Callable, x: a) -> a:
     f(x)
     return x
+
+
+def get[a, b](d: dict[a, b], key: a, default: b) -> b:
+    return cond(contains(d, key), itemgetter(key)(d), default)
+
+
 
 #
 #
