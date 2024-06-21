@@ -3,7 +3,7 @@ from operator import attrgetter
 from socketserver import TCPServer
 from typing import BinaryIO, Callable, Dict
 
-from common import IO, IOFn, tap
+from common import IO, IOFn, get, tap
 from htmlgen import *
 
 #
@@ -38,21 +38,22 @@ _send_headers: IOFn[BaseHTTPRequestHandler, BaseHTTPRequestHandler] = partial(ta
 _end_headers : IOFn[BaseHTTPRequestHandler, BaseHTTPRequestHandler] = partial(tap, methodcaller("end_headers"))
 
 # Write-Related
-_wfile       : Fn[BaseHTTPRequestHandler, BinaryIO]     = attrgetter("wfile")
-_write       : Fn[BinaryIO, Callable[[bytes], IO]]      = methodcaller("write")
-_path        : Fn[BaseHTTPRequestHandler, Path]         = attrgetter("path")
-_bytes_utf8  : Fn[str, bytes]                           = partial(bytes, encoding = "utf-8")
-_call_rf      : Callable[[Route, RouteFunctions], Html] = lambda x, y: methodcaller("get", x, "404")(y)
+_wfile       : Fn[BaseHTTPRequestHandler, BinaryIO] = attrgetter("wfile")
+_write       : Fn[BinaryIO, Callable[[bytes], IO]]  = partial(methodcaller("write"), _wfile)
+_path        : Fn[BaseHTTPRequestHandler, Path]     = attrgetter("path")
+_bytes_utf8  : Fn[str, bytes]                       = partial(bytes, encoding = "utf-8")
+_call_rf     : Fn[Route, Html]                      = partial(get, ROUTEFUNCTIONS, "404")
 
-#TODO: 
-init_response  = compose(_send_200, _send_headers, _end_headers)
+# Pipelines
+init_response = compose(_send_200, _send_headers, _end_headers)
+write_html    = compose(_path, _call_rf, _bytes_utf8, _write)
 
 
 # Handler
 class MyHandler(BaseHTTPRequestHandler):
-    def do_GET(self, rf: RouteFunctions = ROUTEFUNCTIONS) -> IO:
+    def do_GET(self) -> IO:
         init_response(self)
-        self.wfile.write(bytes(call_rf(_path(self), rf), "utf-8"))
+        write_html(self)
 
 
 def server_run(n: PortNumber) -> IO:
@@ -68,4 +69,6 @@ def server_run(n: PortNumber) -> IO:
 
 if __name__ == "__main__":
     server_run(8080)
+
+
 

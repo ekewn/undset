@@ -6,7 +6,7 @@ from typing import Callable, Dict, Iterable, Iterator, List
 
 #
 #
-# TYPES
+# DATA
 #
 #
 
@@ -45,7 +45,7 @@ def consume(i: Iterator) -> None:
 
 def compose(*funcs: Callable) -> Callable:
     """
-    Composes functions from left to right
+    Composes functions from left to right.
     """
     def compose2[a, b, c](x: Callable[[a], b], y: Callable[[b], c]) -> Callable[[a], c]:
         return lambda val: y(x(val))
@@ -53,29 +53,49 @@ def compose(*funcs: Callable) -> Callable:
     return reduce(compose2, funcs)
 
 
-def take[a](n: int, i: Iterator[a]) -> List[a]: return list(islice(i, n))
+def take[a](n: int, i: Iterator[a]) -> List[a]:
+    """
+    Takes the first n from an iterator.
+    """
+    return list(islice(i, n))
 
 
-def drop[a](n: int, i: Iterator[a]) -> Iterator[a]: return islice(i, n, None)
+def drop[a](n: int, i: Iterator[a]) -> Iterator[a]: 
+    """
+    Drops the first n from an iterator.
+    """
+    return islice(i, n, None)
 
 
 def iterate[a](f: Callable[[a], a], x: a) -> Iterator[a]:
+    """
+    Creates an iterator by applying the same function to the result of f(x).
+    """
     return accumulate(repeat(x), lambda fx, _ : f(fx))
 
 
 def cond[a, b](predicate: bool, t: Callable[[], a], f: Callable[[], b]) -> a | b:
+    """
+    Functional ternary operator.
+    """
     return t() if predicate else f()
 
 
-def id[a](x: a) -> a: return x
-
-
-def tap[a](f: Callable, x: a) -> a:
-    f(x)
+def id[a](x: a) -> a:
+    """
+    The identity property. Returns the argument.
+    """
     return x
 
 
-def get[a, b](d: Dict[a, b], key: a, default: b) -> b:
+def tap[a](f: Callable, x: a) -> a:
+    """
+    Calls a function and then returns the argument.
+    """
+    return compose(f, id)(x)
+
+
+def get[a, b](d: Dict[a, b], default: b, key: a) -> b:
     return cond(contains(d, key)
                 , partial(itemgetter(key), d)
                 , partial(id, default))
@@ -96,9 +116,7 @@ if __name__ == "__main__":
     assert cond(False, lambda: "a", lambda: "b") == "b"
     assert id("1") == "1"
     assert tap(id, "2") == "2"
-    assert get({"a" : 1, "b" : 2}, "a", "defaultvalue") == 1
-    assert get({"a" : 1, "b" : 2}, "c", "defaultvalue") == "defaultvalue"
-
-
+    assert get({"a" : 1, "b" : 2}, "defaultvalue", "a") == 1
+    assert get({"a" : 1, "b" : 2}, "defaultvalue", "c") == "defaultvalue"
 
 

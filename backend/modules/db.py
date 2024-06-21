@@ -1,8 +1,8 @@
+import os
+import sqlite3 as sql
 from enum import Enum
 from functools import partial
-import os
 from typing import Iterable, List, Literal, NamedTuple
-import sqlite3 as sql
 
 from backend.modules.common import Fn
 
@@ -11,6 +11,7 @@ from backend.modules.common import Fn
 # DATA
 #
 #
+
 
 type Id                = int
 type Name              = str
@@ -38,6 +39,8 @@ Table = NamedTuple("Table",
                    [("name", Name)
                     , ("fields", List[Field])])
 
+# Table Records
+
 User = NamedTuple("User",
                   [("id", Id)
                     , ("name", Name)
@@ -56,6 +59,7 @@ Message = NamedTuple("ThreadMessage",
                       , ("content", Content)])
 
 # Database Tables
+
 class TABLES(Enum):
     USER = Table(
         "User",
@@ -84,11 +88,14 @@ class TABLES(Enum):
         ],
     )
 
+
 #
 #
 # FUNCTIONS
 #
 #
+
+
 def _select_all(cur: sql.Cursor, t: TABLES) -> Iterable[User | Thread | Message]:
     results = cur.execute(f"SELECT * FROM {t.name};").fetchall()
     match t:
@@ -100,6 +107,8 @@ def _select_all(cur: sql.Cursor, t: TABLES) -> Iterable[User | Thread | Message]
             return map(lambda x: Message(x.id, x.thread_id, x.user_id, x.content), results)
         case _:
             raise NotImplemented("wot tbl is dis m8?")
-select_all_users: Fn[sql.Cursor, Iterable[User]] = partial(_select_all, t=TABLES.USER) #type: ignore
-select_all_threads: Fn[sql.Cursor, Iterable[sql.Thread]] = partial(_select_all, t=TABLES.THREAD) #type: ignore
-select_all_messages: Fn[sql.Cursor, Iterable[Message]] = partial(_select_all, t=TABLES.THREADMESSAGE) #type: ignore
+select_all_users: Fn[sql.Cursor, Iterable[User]] = partial(_select_all, t=TABLES.USER)
+select_all_threads: Fn[sql.Cursor, Iterable[sql.Thread]] = partial(_select_all, t=TABLES.THREAD)
+select_all_messages: Fn[sql.Cursor, Iterable[Message]] = partial(_select_all, t=TABLES.THREADMESSAGE)
+
+
