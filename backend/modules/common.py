@@ -1,8 +1,8 @@
 from collections import deque
 from functools import partial, reduce
 from itertools import accumulate, count, islice, repeat
-from operator import add, itemgetter, contains
-from typing import Any, Callable, Iterator, List
+from operator import add, contains, itemgetter
+from typing import Callable, Dict, Iterator, List
 
 #
 #
@@ -42,12 +42,11 @@ def iterate[a, b](f: Callable[[a], b], x: a) -> Iterator[b]:
     return accumulate(repeat(x), lambda fx, _ : f(fx)) #type: ignore
 
 
-def cond[a, b](predicate: bool, t: a, f: b) -> a | b:
-    return t if predicate else f
+def cond[a, b](predicate: bool, t: Callable[[], a], f: Callable[[], b]) -> a | b:
+    return t() if predicate else f()
 
 
-def id[a](x: a) -> a:
-    return x
+def id[a](x: a) -> a: return x
 
 
 def tap[a](f: Callable, x: a) -> a:
@@ -55,9 +54,10 @@ def tap[a](f: Callable, x: a) -> a:
     return x
 
 
-def get[a, b](d: dict[a, b], key: a, default: b) -> b:
-    return cond(contains(d, key), itemgetter(key)(d), default)
-
+def get[a, b](d: Dict[a, b], key: a, default: b) -> b:
+    return cond(contains(d, key)
+                , lambda : itemgetter(key)(d)
+                , lambda : default)
 
 
 #
@@ -71,4 +71,11 @@ if __name__ == "__main__":
     assert compose(len, lambda x: x + 10, lambda y: y - 1)("number should be 28") == 28
     assert take(4, iterate(partial(add, 3),2)) == [2, 5, 8, 11]
     assert take(3, drop(2, count())) == [2, 3, 4]
+    assert cond(True, lambda: "a", lambda: "b") == "a"
+    assert cond(False, lambda: "a", lambda: "b") == "b"
+    assert id("1") == "1"
+    assert tap(id, "2") == "2"
+    assert get({"a" : 1, "b" : 2}, "a", "defaultvalue") == 1
+    assert get({"a" : 1, "b" : 2}, "c", "defaultvalue") == "defaultvalue"
+
 
