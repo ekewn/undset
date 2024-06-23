@@ -1,7 +1,7 @@
 from collections import deque
 from functools import partial, reduce
 from itertools import accumulate, count, islice, repeat
-from operator import add, contains, itemgetter, methodcaller
+from operator import add, is_, itemgetter, methodcaller, or_
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional
 
 #
@@ -80,9 +80,9 @@ def ignore(_: Any, fn: Callable) -> Callable:
     return fn
 
 
-def const[a](x: a) -> Callable[[], a]:
+def const[a](x: a, _: Any) -> Callable[[], a]:
     """
-    Returns a nullary function that always returns the argument given to const.
+    Returns a nullary function that always returns the first argument, and ignores the second.
     """
     return partial(id, x)
 
@@ -106,9 +106,10 @@ def not_(x: Any) -> bool:
 def default[a](val: a, fn: Fn[..., Optional[a]], *args) -> Fn[..., a]:
     return val if fn(args) is None else fn(args)
 
-def empty[a: (List, Dict, str, int)](x: a) -> a:
+
+def empty[a: (List, Dict, int, str)](x: a) -> a:
     """
-    Returns the empty value (identity value) of the type of argument passed in.
+    Returns the empty value (identity) of the monoid.
     e.g. [], {}, "", or 0.
     """
     is_a = partial(isinstance, x)
@@ -120,6 +121,13 @@ def empty[a: (List, Dict, str, int)](x: a) -> a:
         return 0 #type:ignore
     else:
         return "" #type:ignore
+
+
+def is_empty[a: (List, Dict, int, str)](x: a) -> bool:
+    """
+    Checks if value is the identity value of the monoid.
+    """
+    return any([x == [], x == {}, x == "", x == 0])
 
 
 # Iterator Specifics
