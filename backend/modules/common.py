@@ -1,7 +1,8 @@
 from collections import deque
 from functools import partial, reduce
 from itertools import accumulate, count, islice, repeat
-from operator import add, is_, itemgetter, methodcaller, or_
+import operator as op
+from operator import add, contains, is_not, itemgetter, methodcaller
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional
 
 #
@@ -24,14 +25,14 @@ type IOFn[a, b] = Callable[[a], b]
 
 # Curried Classics
 
-def mapc[a, b](f: Callable[[a], b]) -> Callable[[Iterable[a]], Iterable[b]]:
+def map_[a, b](fn: Callable[[a], b]) -> Callable[[Iterable[a]], Iterable[b]]:
     """
     Curried map.
     """
-    return partial(map, f)
+    return partial(map, fn)
 
 
-def filterc[a](p: Callable[[a], bool]) -> Callable[[Iterable[a]], Iterable[a]]:
+def filter_[a](p: Callable[[a], bool]) -> Callable[[Iterable[a]], Iterable[a]]:
     """
     Curried filter.
     """
@@ -52,11 +53,11 @@ def compose(*funcs: Callable) -> Callable:
 
 # Composition Helpers
 
-def if_else[a, b, c](predicate: Fn[a, bool], if_true: Fn[a, b], if_false: Fn[a , c]) -> Fn[a, b | c]:
+def if_else[a, b, c](p: Fn[a, bool], if_true: Fn[a, b], if_false: Fn[a , c]) -> Fn[a, b | c]:
     """
     Functional ternary operator.
     """
-    return lambda x: if_true(x) if predicate(x) else if_false(x)
+    return lambda x: if_true(x) if p(x) else if_false(x)
 
 
 def id[a](x: a) -> a:
@@ -73,13 +74,6 @@ def tap[a](fn: Callable, x: a) -> a:
     return compose(fn, id)(x)
 
 
-def ignore(_: Any, fn: Callable) -> Callable:
-    """
-    Returns a function that takes the two arguments and ignores the first one.
-    """
-    return fn
-
-
 def const[a](x: a, _: Any) -> Callable[[], a]:
     """
     Returns a nullary function that always returns the first argument, and ignores the second.
@@ -89,16 +83,27 @@ def const[a](x: a, _: Any) -> Callable[[], a]:
 
 # Logical
 
-def and_[a](x: a, y: a) -> bool:
-    return bool(x) and bool(y)
-both = and_
+not_     = op.not_
+and_     = op.and_
+or_      = op.or_
+contains = op.contains
+is_      = op.is_
+is_not   = op.is_not
+truth    = op.truth
 
-def either[a](x: a, y: a) -> bool:
-    return bool(x) or bool(y)
+
+def both[a](p1: Fn[a, bool], p2: Fn[a, bool]) -> Fn[a, bool]:
+    """
+    Returns a function that returns True if both of the predicates are true.
+    """
+    return lambda x: and_(p1(x), p2(x))
 
 
-def not_(x: Any) -> bool:
-    return not bool(x)
+def either[a](p1: Fn[a, bool], p2: Fn[a, bool]) -> Fn[a, bool]:
+    """
+    Returns a function that returns True if either of the predicates are true.
+    """
+    return lambda x: or_(p1(x), p2(x))
 
 
 # Container-related
@@ -161,6 +166,9 @@ def iterate[a](f: Callable[[a], a], x: a) -> Iterator[a]:
 
 
 # List Functions
+
+find_first = op.indexOf
+
 
 def adjust[a](idx: int, fn:Fn[a, a], l: List[a]) -> List[a]:
     """

@@ -2,7 +2,7 @@ from functools import partial
 from operator import methodcaller
 from typing import Iterable, Literal, Tuple
 
-from common import Fn, compose, mapc
+from common import Fn, compose, map_
 
 #
 #
@@ -76,7 +76,7 @@ def _wrap_rows(x: Fn[str, HtmlComponent]) -> Fn[Iterable[str], HtmlComponent]:
     """
     Generic wrapper for table rows. Wraps each cell in its tag, then wraps the row.
     """
-    return compose(mapc(x), join, _tr)
+    return compose(map_(x), join, _tr)
 _wrap_th   = _wrap_rows(_th)
 _wrap_td   = _wrap_rows(_td)
 
