@@ -1,7 +1,7 @@
 from collections import deque
 from functools import partial, reduce
 from itertools import accumulate, count, filterfalse, islice, repeat, tee
-from operator import *
+import operator as op
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
 #
@@ -34,7 +34,6 @@ def map_[a, b](fn: Callable[[a], b]) -> Callable[[Iterable[a]], Iterable[b]]:
     Curried map.
     """
     return partial(map, fn)
-# NOTE: Needs test
 
 
 def filter_[a](p: Predicate[a]) -> Callable[[Iterable[a]], Iterable[a]]:
@@ -42,7 +41,35 @@ def filter_[a](p: Predicate[a]) -> Callable[[Iterable[a]], Iterable[a]]:
     Curried filter.
     """
     return partial(filter, p)
-# NOTE: Needs test
+
+
+def add[a](arg: a) -> FnU[a, a]:
+    """
+    Curried operator.add. Returns unary function that adds this arg.
+    """
+    return partial(op.add, arg)
+
+
+def sub[a](arg: a) -> FnU[a, a]:
+    """
+    Curried operator.sub. Returns unary function that subtracts this arg.
+    """
+    return partial(op.sub, arg)
+
+
+def mul[a](arg: a) -> FnU[a, a]:
+    """
+    Curried operator.mul. Returns unary function that multiplies by this arg.
+    """
+    return partial(op.mul, arg)
+
+
+def div_this[a](arg: a) -> FnU[a, a]:
+    """
+    Curred operator.floordiv. Returns unary function that sets the numerator as this arg.
+    """
+    return partial(op.floordiv, arg)
+
 
 # Composers
 
@@ -61,7 +88,6 @@ def pipe(val, *funcs: Callable):
     Applies the functions to the value from left to right.
     """
     return compose(*funcs)(val)
-# NOTE: Needs test
 
 
 # Composition Helpers
@@ -78,7 +104,6 @@ def always[a](x: a) -> FnN[a]:
     Returns a function that always returns the arg.
     """
     return partial(id, x)
-# NOTE: Needs test
 
 
 def tap[a](fn: Callable, x: a) -> a:
@@ -95,7 +120,6 @@ def T(*args) -> bool:
     Always returns true.
     """
     return True
-# NOTE: Needs test
 
 
 def F(*args) -> bool:
@@ -103,25 +127,22 @@ def F(*args) -> bool:
     Always returns False.
     """
     return False
-# NOTE: Needs test
 
 
 def both[a](p1: Predicate[a], p2: Predicate[a]) -> Predicate[a]:
     """
     Returns a function that returns True if both of the predicates are true.
     """
-    def _(x, y, arg) -> bool: return and_(x(arg), y(arg))
+    def _(x, y, arg) -> bool: return x(arg) and y(arg)
     return partial(_, p1, p2)
-# NOTE: Needs test
 
 
 def either[a](p1: Predicate[a], p2: Predicate[a]) -> Predicate[a]:
     """
     Returns a function that returns True if either of the predicates are true.
     """
-    def _(x, y, arg) -> bool: return or_(x(arg), y(arg))
+    def _(x, y, arg) -> bool: return x(arg) or y(arg)
     return partial(_, p1, p2)
-# NOTE: Needs test
 
 
 # Branches
@@ -138,7 +159,7 @@ def unless[a, b](p: Predicate[a], fn: FnU[a, b]) -> FnU[a, a | b]:
     """
     Returns a unary function that only applies the fn param if predicate is false, else returns the arg.
     """
-    def _(p, f, v): return f(v) if not_(p(v)) else v
+    def _(p, f, v): return f(v) if not p(v) else v
     return partial(_, p, fn)
 # NOTE: Needs test
 
@@ -222,7 +243,7 @@ def is_nil(x: Any) -> bool:
     """
     Checks if value is None.
     """
-    return is_(x, None)
+    return x is None
 # NOTE: Needs test
 
 
@@ -301,7 +322,7 @@ def get[a, b](d: Dict[a, b], default: b, key: a) -> b:
     """
     Dict.get alias.
     """
-    return methodcaller("get", key, default)(d)
+    return d.get(key, default)
 
 
 #
@@ -312,7 +333,27 @@ def get[a, b](d: Dict[a, b], default: b, key: a) -> b:
 
 
 if __name__ == "__main__":
+    # Curried Classics
+    assert list(take(3, map(partial(add,1), count()))) == list(take(3, map_(partial(add,1))(count())))
+    assert list(take(3, filter(lambda x: x > 2, count()))) == list(take(3,filter_(lambda x: x > 2)(count())))
+    # add, sub, mul, div_this
+
+    # Composers
+    assert pipe(1, partial(add, 1), partial(mul, 3)) == (1 + 1) * 3
     assert compose(len, lambda x: x + 10, lambda y: y - 1)("number should be 28") == 28
+
+    # Composition Helpers
+    assert id("test") == "test"
+    assert always("test")() == "test"
+    assert tap(partial(add, 1), 1) == 1
+
+    # Logical
+    assert T() == True
+    assert F() == False
+    # both
+    # either
+
+
     assert list(take(4, iterate(partial(add, 3),2))) == [2, 5, 8, 11]
     assert list(take(3, drop(2, count()))) == [2, 3, 4]
     assert if_else(lambda _: True, lambda _: "a", lambda _: "b")("") == "a"
