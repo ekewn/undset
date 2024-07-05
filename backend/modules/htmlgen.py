@@ -1,8 +1,9 @@
 from functools import partial
 from operator import methodcaller
-from typing import Iterable, Literal, Tuple
+from typing import Literal, Tuple
+from collections.abc import Iterable
 
-from common import Fn, compose, map_
+from pyamda import FnU, compose, map_
 
 #
 #
@@ -62,17 +63,17 @@ def _htmlComponent(t: HtmlTag, s: str | HtmlComponent) -> HtmlComponent:
     Generic wrapper for html tags.
     """
     return f"<{t}>{s}</{t}>"
-h1 :  Fn[str, H1] = partial(_htmlComponent, "h1")
-h2 :  Fn[str, H2] = partial(_htmlComponent, "h2")
-p  :  Fn[str, P]  = partial(_htmlComponent, "p")
-_th:  Fn[str, Th] = partial(_htmlComponent, "th")
-_td:  Fn[str, Td] = partial(_htmlComponent, "td")
-_tr:  Fn[str, Tr] = partial(_htmlComponent, "tr")
+h1 :  FnU[str, H1] = partial(_htmlComponent, "h1")
+h2 :  FnU[str, H2] = partial(_htmlComponent, "h2")
+p  :  FnU[str, P]  = partial(_htmlComponent, "p")
+_th:  FnU[str, Th] = partial(_htmlComponent, "th")
+_td:  FnU[str, Td] = partial(_htmlComponent, "td")
+_tr:  FnU[str, Tr] = partial(_htmlComponent, "tr")
 
 
 # Complex Wrappers
 
-def _wrap_rows(x: Fn[str, HtmlComponent]) -> Fn[Iterable[str], HtmlComponent]:
+def _wrap_rows(x: FnU[str, HtmlComponent]) -> FnU[Iterable[str], HtmlComponent]:
     """
     Generic wrapper for table rows. Wraps each cell in its tag, then wraps the row.
     """
@@ -106,5 +107,3 @@ if __name__ == "__main__":
     print_html(table(["h1", "h2", "h3"]
                       , [("td11", "td12", "td13"),
                          ("td21", "td22", "td23")]))
-
-
