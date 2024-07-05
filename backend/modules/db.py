@@ -4,7 +4,7 @@ from enum import Enum
 from functools import partial
 from typing import Iterable, List, Literal, NamedTuple
 
-from backend.modules.common import Fn
+from pyamda import FnU
 
 #
 #
@@ -107,8 +107,8 @@ def _select_all(cur: sql.Cursor, t: TABLES) -> Iterable[User | Thread | Message]
             return map(lambda x: Message(x.id, x.thread_id, x.user_id, x.content), results)
         case _:
             raise NotImplemented("wot tbl is dis m8?")
-select_all_users: Fn[sql.Cursor, Iterable[User]] = partial(_select_all, t=TABLES.USER)
-select_all_threads: Fn[sql.Cursor, Iterable[sql.Thread]] = partial(_select_all, t=TABLES.THREAD)
-select_all_messages: Fn[sql.Cursor, Iterable[Message]] = partial(_select_all, t=TABLES.THREADMESSAGE)
+select_all_users: FnU[sql.Cursor, Iterable[User]] = partial(_select_all, t=TABLES.USER)
+select_all_threads: FnU[sql.Cursor, Iterable[sql.Thread]] = partial(_select_all, t=TABLES.THREAD)
+select_all_messages: FnU[sql.Cursor, Iterable[Message]] = partial(_select_all, t=TABLES.THREADMESSAGE)
 
 
