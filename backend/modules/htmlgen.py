@@ -82,16 +82,31 @@ _wrap_th   = _wrap_rows(_th)
 _wrap_td   = _wrap_rows(_td)
 
 
-def th(headers: Iterable[str]) -> Tr: return _wrap_th(headers)
+def th(headers: Iterable[str]) -> Tr:
+    """
+    Creates header row for a table.
+    """
+    return _wrap_th(headers)
 
 
-def td(rows: Iterable[str]) -> Tr: return _wrap_td(rows)
+def td(rows: Iterable[str]) -> Tr:
+    """
+    Creates a table row.
+    """
+    return _wrap_td(rows)
 
 
-def a(content: str, link: Link) -> A: return f"<a href={link}>{content}</a>"
+def a(content: str, link: Link) -> A:
+    """
+    Creates link.
+    """
+    return f"<a href={link}>{content}</a>"
 
 
 def table(headers: Iterable[Td], rows: Iterable[Tuple]) -> Table:
+    """
+    Creates table element.
+    """
     return f"<table>{th(headers)}{join(map(td,rows))}</table>"
 
 

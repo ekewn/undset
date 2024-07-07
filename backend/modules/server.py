@@ -36,7 +36,7 @@ class MyHandler(BaseHTTPRequestHandler):
 
 #
 #
-# MAIN
+# TEST
 #
 #
 
