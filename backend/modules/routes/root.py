@@ -1,5 +1,12 @@
 from htmlgen import *
 
+def navbar() -> Html:
+    return div()
+
 
 def main() -> Html:
-    return h1("Hello, dis is root.")
+    return html([
+        h1("Your Favorite Bookclub"),
+
+
+    ])

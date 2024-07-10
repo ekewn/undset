@@ -66,6 +66,7 @@ def _htmlComponent(t: HtmlTag, s: str | HtmlComponent) -> HtmlComponent:
 h1 :  FnU[str, H1] = partial(_htmlComponent, "h1")
 h2 :  FnU[str, H2] = partial(_htmlComponent, "h2")
 p  :  FnU[str, P]  = partial(_htmlComponent, "p")
+div  :  FnU[str, Div]  = partial(_htmlComponent, "div")
 _th:  FnU[str, Th] = partial(_htmlComponent, "th")
 _td:  FnU[str, Td] = partial(_htmlComponent, "td")
 _tr:  FnU[str, Tr] = partial(_htmlComponent, "tr")
@@ -96,11 +97,11 @@ def td(rows: Iterable[str]) -> Tr:
     return _wrap_td(rows)
 
 
-def a(content: str, link: Link) -> A:
+def a(content: str, href: Link) -> A:
     """
     Creates link.
     """
-    return f"<a href={link}>{content}</a>"
+    return f"<a href={href}>{content}</a>"
 
 
 def table(headers: Iterable[Td], rows: Iterable[Tuple]) -> Table:
